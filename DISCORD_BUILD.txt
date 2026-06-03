@@ -1,0 +1,8 @@
+## Discord Announcement - Base64 Encoder/Decoder API
+
+**[Base64 Encoder/Decoder API]**
+**Problem it solves:** Developers need to encode/decode Base64 strings quickly without installing libraries or using online tools
+**Who needs it:** Developers, API integrators, anyone working with authentication tokens or data serialization
+**Passivity Score: 9/10**
+**Realistic income:** Low | Mid | High /month
+**Building now...**
