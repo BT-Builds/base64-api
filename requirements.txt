@@ -1,6 +1,4 @@
 fastapi
-mangum
-pydantic
-python-multipart
-slowapi
 uvicorn
+pydantic
+mangum

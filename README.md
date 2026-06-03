@@ -1,58 +1,65 @@
-# Base64 Encoder/Decoder API
+# Base64 API
 
-Encode and decode Base64 strings with simple HTTP API calls. No libraries needed.
+Encode and decode Base64 data via simple HTTP endpoints.
 
 ## Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check (no auth required) |
-| `/encode` | POST | Encode text to Base64 |
-| `/encode` | GET | Encode text to Base64 via `text` parameter |
-| `/decode` | POST | Decode Base64 to text |
-| `/decode` | GET | Decode Base64 to text via `text` parameter |
-
-## Authentication
-
-All endpoints except `/health` require API key via:
-- Header: `X-API-Key: your-key`
-- Query param: `?api_key=your-key`
-
-Default demo key: `demo-key-change-in-production`
-
-## Examples
-
+### GET /health
+Health check endpoint (no auth required)
 ```bash
-# Encode (GET)
-curl "https://<slug>.vercel.app/encode?text=hello&api_key=demo-key-change-in-production"
-
-# Encode (POST)
-curl -X POST "https://<slug>.vercel.app/encode" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: demo-key-change-in-production" \
-  -d '{"text": "hello world"}'
-
-# Decode (GET)
-curl "https://<slug>.vercel.app/decode?text=aGVsbG8=&api_key=demo-key-change-in-production"
-
-# Decode (POST)
-curl -X POST "https://<slug>.vercel.app/decode" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: demo-key-change-in-production" \
-  -d '{"text": "aGVsbG8gd29ybGQ="}'
+curl https://base64-api.vercel.app/health
 ```
 
-## Response Format
+### POST /encode
+Encode text to Base64
 
+**Headers:** `X-API-Key: free-demo-key`
+
+**Body:**
 ```json
 {
-  "input": "original text",
-  "output": "encoded/decoded result",
-  "encoding": "base64"
+  "text": "Hello World",
+  "encoding": "utf-8"
 }
 ```
 
-## Pricing Suggestion
+**cURL:**
+```bash
+curl -X POST https://base64-api-three.vercel.app/encode \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: free-demo-key" \
+  -d '{"text":"Hello World"}'
+```
 
-- $9/month per 10,000 requests
-- List on RapidAPI or self-host for developers
+### POST /decode
+Decode Base64 to text
+
+**Headers:** `X-API-Key: free-demo-key`
+
+**Body:**
+```json
+{
+  "base64": "SGVsbG8gV29ybGQ=",
+  "encoding": "utf-8"
+}
+```
+
+**cURL:**
+```bash
+curl -X POST https://base64-api-three.vercel.app/decode \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: free-demo-key" \
+  -d '{"base64":"SGVsbG8gV29ybGQ="}'
+```
+
+## Authentication
+All endpoints except /health require `X-API-Key` header. Default test key: `free-demo-key`
+
+## Rate Limiting
+60 requests per minute per API key.
+
+## Use Cases
+- Convert API payloads to Base64
+- Decode configuration values
+- Process authentication tokens
+- Handle file uploads in APIs
