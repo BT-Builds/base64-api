@@ -63,3 +63,6 @@ All endpoints except /health require `X-API-Key` header. Default test key: `free
 - Decode configuration values
 - Process authentication tokens
 - Handle file uploads in APIs
+
+## Postman
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://raw.githubusercontent.com/BT-Builds/base64-api/main/postman_collection.json)
