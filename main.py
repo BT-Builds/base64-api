@@ -69,29 +69,108 @@ class ErrorResponse(BaseModel):
     error: str
     detail: str
 
+# === Bulk request/response models ===
+class BulkEncodeItem(BaseModel):
+    text: str
+    encoding: str = "utf-8"
+
+class BulkDecodeItem(BaseModel):
+    base64: str
+    encoding: str = "utf-8"
+
+class BulkEncodeRequest(BaseModel):
+    items: list[BulkEncodeItem]
+
+class BulkDecodeRequest(BaseModel):
+    items: list[BulkDecodeItem]
+
+class BulkResult(BaseModel):
+    input: str
+    output: str | None = None
+    error: str | None = None
+
+class BulkEncodeResponse(BaseModel):
+    results: list[BulkResult]
+    total: int
+    successful: int
+
+class BulkDecodeResponse(BaseModel):
+    results: list[BulkResult]
+    total: int
+    successful: int
+
+# === Helper functions ===
+def encode_single(text: str, encoding: str = "utf-8") -> tuple[str, str | None]:
+    """Encode text to base64. Returns (output, error) tuple."""
+    try:
+        encoded = base64.b64encode(text.encode(encoding)).decode('utf-8')
+        return encoded, None
+    except Exception as e:
+        return "", f"Encoding failed: {str(e)}"
+
+def decode_single(base64_str: str, encoding: str = "utf-8") -> tuple[str, str | None]:
+    """Decode base64 to text. Returns (output, error) tuple."""
+    try:
+        # Add padding if needed
+        padding = 4 - len(base64_str) % 4
+        if padding != 4:
+            base64_str += '=' * padding
+        decoded = base64.b64decode(base64_str).decode(encoding)
+        return decoded, None
+    except Exception as e:
+        return "", f"Decoding failed: {str(e)}"
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "base64-api"}
 
 @app.post("/encode", dependencies=[Depends(rate_limit)])
 def encode(req: EncodeRequest):
-    try:
-        encoded = base64.b64encode(req.text.encode(req.encoding)).decode('utf-8')
-        return EncodeResponse(input=req.text, output=encoded, charset=req.encoding)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Encoding failed: {str(e)}")
+    output, error = encode_single(req.text, req.encoding)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return EncodeResponse(input=req.text, output=output, charset=req.encoding)
 
 @app.post("/decode", dependencies=[Depends(rate_limit)])
 def decode(req: DecodeRequest):
-    try:
-        # Add padding if needed
-        padding = 4 - len(req.base64) % 4
-        if padding != 4:
-            req.base64 += '=' * padding
-        decoded = base64.b64decode(req.base64).decode(req.encoding)
-        return DecodeResponse(input=req.base64, output=decoded, charset=req.encoding)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Decoding failed: {str(e)}")
+    output, error = decode_single(req.base64, req.encoding)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return DecodeResponse(input=req.base64, output=output, charset=req.encoding)
+
+@app.post("/bulk/encode", dependencies=[Depends(rate_limit)])
+def bulk_encode(req: BulkEncodeRequest):
+    if len(req.items) > 1000:
+        raise HTTPException(status_code=400, detail="Maximum 1000 items per request")
+
+    results = []
+    successful = 0
+    for item in req.items:
+        output, error = encode_single(item.text, item.encoding)
+        if error:
+            results.append(BulkResult(input=item.text, error=error))
+        else:
+            results.append(BulkResult(input=item.text, output=output))
+            successful += 1
+
+    return BulkEncodeResponse(results=results, total=len(req.items), successful=successful)
+
+@app.post("/bulk/decode", dependencies=[Depends(rate_limit)])
+def bulk_decode(req: BulkDecodeRequest):
+    if len(req.items) > 1000:
+        raise HTTPException(status_code=400, detail="Maximum 1000 items per request")
+
+    results = []
+    successful = 0
+    for item in req.items:
+        output, error = decode_single(item.base64, item.encoding)
+        if error:
+            results.append(BulkResult(input=item.base64, error=error))
+        else:
+            results.append(BulkResult(input=item.base64, output=output))
+            successful += 1
+
+    return BulkDecodeResponse(results=results, total=len(req.items), successful=successful)
 
 @app.get("/", include_in_schema=False)
 def root():
